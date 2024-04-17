@@ -20,9 +20,9 @@ var a App
 
 func TestMain(m *testing.M) {
 	a.Initialize(
-		"postgres", //os.Getenv("APP_DB_USERNAME"),
-		"",         //os.Getenv("APP_DB_PASSWORD"),
-		"postgres") //os.Getenv("APP_DB_NAME"))
+		"elehna",
+		"elehna",
+		"postgres")
 
 	ensureTableExists()
 	code := m.Run()
@@ -136,9 +136,9 @@ func TestGetProduct(t *testing.T) {
 	checkResponseCode(t, http.StatusOK, response.Code)
 }
 
-// main_test.go
-
 func addProducts(count int) {
+	fmt.Printf("Adding %d products into database.\n", count)
+
 	if count < 1 {
 		count = 1
 	}
@@ -204,4 +204,91 @@ func TestDeleteProduct(t *testing.T) {
 	req, _ = http.NewRequest("GET", "/product/1", nil)
 	response = executeRequest(req)
 	checkResponseCode(t, http.StatusNotFound, response.Code)
+}
+
+func TestGetAllProducts(t *testing.T) {
+	clearTable()
+	addProducts(3) // Fügt 3 Produkte hinzu
+
+	req, _ := http.NewRequest("GET", "/products", nil)
+	response := executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println("\tResponse Body:", string(body))
+
+	var products []map[string]interface{}
+	if err := json.Unmarshal(body, &products); err != nil {
+		t.Errorf("Error parsing json response: %s", err)
+	}
+
+	if len(products) != 3 {
+		t.Errorf("Expected 3 products. Got %d", len(products))
+	}
+}
+
+func TestGetNrProducts(t *testing.T) {
+	clearTable()
+	addProducts(5) // Fügt 5 Produkte hinzu
+
+	req, _ := http.NewRequest("GET", "/products/count", nil)
+	response := executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	var result map[string]int
+	err := json.Unmarshal(response.Body.Bytes(), &result)
+	if err != nil {
+		t.Fatal("Cannot parse json response:", err)
+	}
+
+	expectedCount := 5
+	if result["Number of products"] != expectedCount {
+		t.Errorf("Expected number of products to be %d. Got %d", expectedCount, result["Number of products"])
+	}
+}
+
+func TestGetMostExpensiveProduct(t *testing.T) {
+	clearTable()
+	addProducts(3) // Fügt Produkte mit ansteigenden Preisen hinzu
+
+	req, _ := http.NewRequest("GET", "/products/expensiveProduct", nil)
+	response := executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	var product map[string]interface{}
+	err := json.Unmarshal(response.Body.Bytes(), &product)
+	if err != nil {
+		t.Fatal("Cannot parse json response:", err)
+	}
+
+	if product["price"] != float64(30) {
+		t.Errorf("Expected the price of the most expensive product to be 30.00. Got %.2f", product["price"])
+	}
+}
+
+func TestGetCheapestProduct(t *testing.T) {
+	clearTable()
+	addProducts(3) // Fügt Produkte mit ansteigenden Preisen hinzu
+
+	req, _ := http.NewRequest("GET", "/products/cheapProduct", nil)
+	response := executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	var product map[string]interface{}
+	err := json.Unmarshal(response.Body.Bytes(), &product)
+	if err != nil {
+		t.Fatal("Cannot parse json response:", err)
+	}
+
+	if product["price"] != float64(10) {
+		t.Errorf("Expected the price of the cheapest product to be 10.00. Got %.2f", product["price"])
+	}
 }

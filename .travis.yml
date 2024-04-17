@@ -15,7 +15,7 @@ script:
   # Build the code
   - CGO_ENABLED=0 GOARCH=amd64 go build -o ms_demo
   - echo "$REGISTRY_PASSWORD" | docker login --username $REGISTRY_USER --password-stdin
-  #- docker build -f Dockerfile -t mrckurz/ms_demo:latest ./
+  - docker build -f Dockerfile -t elehna/app:latest ./
   #- GIT_SHA="$(git rev-parse --short HEAD)"
   #- docker tag mrckurz/ms_demo:latest mrckurz/ms_demo:$GIT_SHA
   #- docker push mrckurz/ms_demo:latest

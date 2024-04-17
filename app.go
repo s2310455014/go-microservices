@@ -32,15 +32,35 @@ func (a *App) Initialize(user, password, dbname string) {
 
 	a.Router = mux.NewRouter()
 
-//	if(true) {}
+	//	if(true) {}
 
 	a.initializeRoutes()
+
+	a.initializeDatabase()
 
 	//fmt.Printf("++DB Credentials: user=%s password=%s dbname=%s sslmode=disable\n", user, password, dbname)
 }
 
 func (a *App) Run(addr string) {
 	log.Fatal(http.ListenAndServe(":8010", a.Router))
+}
+
+func (a *App) initializeDatabase() {
+	fmt.Println("Initializing database...")
+
+	a.clearTable()
+	var count int = 10
+
+	for i := 0; i < count; i++ {
+		a.DB.Exec("INSERT INTO products(name, price) VALUES($1, $2)", "Product "+strconv.Itoa(i), (i+1.0)*10)
+	}
+	fmt.Println("Database is ready.")
+}
+
+func (a *App) clearTable() {
+	fmt.Println("Clearing database...")
+	a.DB.Exec("DELETE FROM products")
+	a.DB.Exec("ALTER SEQUENCE products_id_seq RESTART WITH 1")
 }
 
 func (a *App) getProduct(w http.ResponseWriter, r *http.Request) {
@@ -156,10 +176,50 @@ func (a *App) deleteProduct(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, map[string]string{"result": "success"})
 }
 
+func (a *App) getNrProducts(w http.ResponseWriter, r *http.Request) {
+	var count int
+	query := "SELECT COUNT(*) FROM products"
+	err := a.DB.QueryRow(query).Scan(&count)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Server error")
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, map[string]int{"Number of products": count})
+}
+
+func (a *App) getMostExpensiveProduct(w http.ResponseWriter, r *http.Request) {
+	var p product
+	query := "SELECT id, name, price FROM products ORDER BY price DESC LIMIT 1"
+	err := a.DB.QueryRow(query).Scan(&p.ID, &p.Name, &p.Price)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Server error")
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, p)
+}
+
+func (a *App) getCheapestProduct(w http.ResponseWriter, r *http.Request) {
+	var p product
+	query := "SELECT id, name, price FROM products ORDER BY price ASC LIMIT 1"
+	err := a.DB.QueryRow(query).Scan(&p.ID, &p.Name, &p.Price)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Server error")
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, p)
+}
+
 func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("/products", a.getProducts).Methods("GET")
 	a.Router.HandleFunc("/product", a.createProduct).Methods("POST")
 	a.Router.HandleFunc("/product/{id:[0-9]+}", a.getProduct).Methods("GET")
 	a.Router.HandleFunc("/product/{id:[0-9]+}", a.updateProduct).Methods("PUT")
 	a.Router.HandleFunc("/product/{id:[0-9]+}", a.deleteProduct).Methods("DELETE")
+
+	a.Router.HandleFunc("/products/count", a.getNrProducts).Methods("GET")
+	a.Router.HandleFunc("/products/expensiveProduct", a.getMostExpensiveProduct).Methods("GET")
+	a.Router.HandleFunc("/products/cheapProduct", a.getCheapestProduct).Methods("GET")
 }
