@@ -36,18 +36,18 @@ jobs:
       - name: Test
         run: go test -v ./...
 
-  # sonarCloud:
-  #   needs: build
-  #   name: SonarCloud Code Analysis
-  #   runs-on: ubuntu-latest
+  sonarCloud:
+    needs: build
+    name: SonarCloud Code Analysis
+    runs-on: ubuntu-latest
 
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         # Disabling shallow clone is recommended for improving relevancy of reporting
-  #         fetch-depth: 0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Disabling shallow clone is recommended for improving relevancy of reporting
+          fetch-depth: 0
 
-  #     - uses: sonarsource/sonarcloud-github-action@master
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - uses: sonarsource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
