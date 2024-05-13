@@ -33,7 +33,7 @@ jobs:
         run: docker image build -t elenaebetshuber/myhello:0.0.1 ./
 
       - name: Push docker image
-      - run: docker image push elenaebetshuber/myhello:0.0.1
+        run: docker image push elenaebetshuber/myhello:0.0.1
 
       - name: Build
         run: go build -v ./...
